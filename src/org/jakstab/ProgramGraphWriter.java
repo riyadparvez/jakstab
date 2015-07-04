@@ -432,11 +432,14 @@ public class ProgramGraphWriter {
 
 	private GraphWriter createGraphWriter(String filename) {
 		try {
+		    /*
 			if (Options.graphML.getValue()) {
 				return new GraphMLWriter(filename);
 			} else {
 				return new GraphvizWriter(filename);
 			}
+			*/
+			return new GraphSNAPWriter(filename);
 		} catch (IOException e) {
 			logger.error("Cannot open output file!", e);
 			return null;
@@ -605,7 +608,7 @@ public class ProgramGraphWriter {
 			return;
 		}
 	}
-
+	
 	private void writeTopologicalBBCFG(ControlFlowGraph cfg, String filename) {
 		// Create dot file
 		GraphWriter gwriter = createGraphWriter(filename);
