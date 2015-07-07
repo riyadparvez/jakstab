@@ -519,13 +519,15 @@ public class ProgramGraphWriter {
 
 	private void writeAssemblyBBCFG(ControlFlowGraph cfg, String filename) {
 		// Create dot file
-		GraphWriter gwriter = createGraphWriter(filename);
-		if (gwriter == null) return;
+		//GraphWriter gwriter = createGraphWriter(filename);
+		//if (gwriter == null) return;
 		
 		TreeMap<Location, BasicBlock> blockMap = new TreeMap<Location, BasicBlock>();
 		blockMap.putAll(cfg.getBasicBlocks());
 	
 		try {
+		    GraphSNAPWriter snapWriter = new GraphSNAPWriter(filename);
+		    /*
 			//for (Map.Entry<Location, BasicBlock> entry : cfg.getBasicBlocks().entrySet()) {
 			for (Map.Entry<Location, BasicBlock> entry : blockMap.entrySet()) {
 				
@@ -552,14 +554,44 @@ public class ProgramGraphWriter {
 				
 				gwriter.writeNode(nodeName, labelBuilder.toString(), getNodeProperties(cfg, nodeLoc));
 			}
-			
+			*/
+			for (Map.Entry<Location, BasicBlock> entry : blockMap.entrySet()) {
+                
+                Location nodeLoc = entry.getKey();
+                BasicBlock bb = entry.getValue();
+                
+                String nodeName = nodeLoc.toString();
+                StringBuilder labelBuilder = new StringBuilder();
+                String locLabel = program.getSymbolFor(nodeLoc.getAddress());
+                if (locLabel.length() > 20) locLabel = locLabel.substring(0, 20) + "...";
+                labelBuilder.append(locLabel).append("\\n");
+                int count = 0;
+                AbsoluteAddress firstAddr = null;
+                AbsoluteAddress lastAddr = null;
+                for (Iterator<AbsoluteAddress> addrIt = bb.addressIterator(); addrIt.hasNext();) {
+                    AbsoluteAddress curAddr = addrIt.next();
+                    Instruction instr = program.getInstruction(curAddr);
+                    if (instr != null) {
+                        if (count == 0) {
+                            firstAddr = curAddr;
+                        }
+                    } else {
+                    }
+                    count++;
+                    lastAddr = curAddr;
+                }
+                
+                snapWriter.writeSNAPNode(nodeLoc.toString(), 
+                    (firstAddr != null)? firstAddr.toString() : "", 
+                    (lastAddr != null)? lastAddr.toString() : "");
+            }
 			for (CFAEdge e : cfg.getBasicBlockEdges()) {
 				if (e.getKind() == null) logger.error("Null kind? " + e);
 				Location sourceLoc = e.getSource(); 
 				Location targetLoc = e.getTarget();
 				RTLStatement stmt = (RTLStatement)e.getTransformer();
 				
-				String label = null;
+				boolean isConditional = false;
 				RTLLabel lastLoc = stmt.getLabel();
 				Instruction instr = program.getInstruction(lastLoc.getAddress());
 				
@@ -572,15 +604,15 @@ public class ProgramGraphWriter {
 					if (instr instanceof BranchInstruction) {
 						BranchInstruction bi = (BranchInstruction)instr;
 						if (bi.isConditional()) {
-							// If the assume in the edge has the same nextlabel as Goto, then it's the fall-through
-							label = stmt.getNextLabel().equals(origStmt.getNextLabel()) ? "F" : "T";
+							isConditional = true;
+						} else {
+                            isConditional = false;
 						}
 					}
 					
 					switch (((RTLGoto)origStmt).getType()) {
 					case CALL: case RETURN:
 						if (stmt.getNextLabel().equals(origStmt.getNextLabel())) {
-							label = "call return";
 						} else {
 							weak = true;
 						}
@@ -592,17 +624,15 @@ public class ProgramGraphWriter {
 				if (Options.procedureAbstraction.getValue() != 1)
 					weak = false;
 
-				gwriter.writeEdge(
+				snapWriter.writeSNAPEdge(
 						sourceLoc.toString(), 
 						targetLoc.toString(), 
-						label,
-						e.getKind().equals(CFAEdge.Kind.MAY) ? Color.BLACK : Color.GREEN,
-						weak
+						isConditional
 						);
-	
 			}
 	
-			gwriter.close();
+			//gwriter.close();
+			snapWriter.close();
 		} catch (IOException e) {
 			logger.error("Cannot write to output file", e);
 			return;

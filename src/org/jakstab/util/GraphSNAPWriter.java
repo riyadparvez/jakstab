@@ -59,58 +59,57 @@ public class GraphSNAPWriter implements GraphWriter {
 		edgesOut.close();
 	}
 
+	public final void writeSNAPNode(String id, String startAddress, String terminatorAddress) throws IOException {
+        String i = toIdentifier(id);
+        // FIXME: Done by a hack
+        if ((startAddress==null) || startAddress.isEmpty() || (terminatorAddress == null) || terminatorAddress.isEmpty()) {
+            return;
+        }
+        nodesOut.write(startAddress);
+        nodesOut.write("\t");
+        nodesOut.write(terminatorAddress);
+        nodesOut.write("\t");
+        nodesOut.write(i);
+        nodesOut.write("\n");
+    }
+    
 	@Override
 	public final void writeNode(String id, String body) throws IOException {
-		writeNode(id, body, null);
 	}
 
 	@Override
 	public final void writeNode(String id, String body, Map<String,String> properties) throws IOException {
-		//out.write("<node id=\""+toIdentifier(id)+"\">\n");
-		String i = toIdentifier(id);
-		for (Map.Entry<String, String> property : properties.entrySet()) {
-		    nodesOut.write(property.getKey());
-		    nodesOut.write(" ");
-		    nodesOut.write(property.getValue());
-		    nodesOut.write("_\t_");
-		}
-		nodesOut.write("\n");
 	}
 
 	@Override
 	public final void writeEdge(String id1, String id2) throws IOException {
-		writeEdge(id1, id2, (Map<String, String>)null);
 	}
 
-	public final void writeEdge(String id1, String id2, Map<String,String> properties) throws IOException {
-		//out.write("<edge source=\""+toIdentifier(id1)+"\" target=\""+toIdentifier(id2)+"\">\n");
+    public final void writeSNAPEdge(String id1, String id2, boolean isConditional) throws IOException {
 		String i1 = toIdentifier(id1);
 		String i2 = toIdentifier(id2);
-		edgesOut.write(i1 + "\t" + i2 + "\n");
+		edgesOut.write(i1 + "\t" + i2 + "\t" + isConditional + "\n");
+    }
+    
+	public final void writeEdge(String id1, String id2, Map<String,String> properties) throws IOException {
 	}
 
 	@Override
 	public void writeEdge(String id1, String id2, Color color)
 			throws IOException {
-		Map<String,String> map = new HashMap<String, String>();
-		writeEdge(id1, id2, map);
 	}
 
 	@Override
 	public final void writeEdge(String id1, String id2, String label) throws IOException {
-		writeEdge(id1, id2, label, null);
 	}
 
 	@Override
 	public final void writeEdge(String id1, String id2, String label, Color color) throws IOException {
-		Map<String,String> map = new HashMap<String, String>();
-		writeEdge(id1, id2, map);
 	}
 
 	@Override
 	public void writeEdge(String id1, String id2, String label, Color color, 
 			boolean weakEdge) throws IOException {
-		writeEdge(id1, id2, label, color);		
 	}
 
 	private final String toIdentifier(String id) {
