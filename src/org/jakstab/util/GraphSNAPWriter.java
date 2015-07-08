@@ -60,11 +60,11 @@ public class GraphSNAPWriter implements GraphWriter {
 	}
 
 	public final void writeSNAPNode(String id, String startAddress, String terminatorAddress) throws IOException {
-        String i = toIdentifier(id);
-        // FIXME: Done by a hack
         if ((startAddress==null) || startAddress.isEmpty() || (terminatorAddress == null) || terminatorAddress.isEmpty()) {
             return;
         }
+        String i = newIdentifier(id);
+        // FIXME: Done by a hack
         nodesOut.write(startAddress);
         nodesOut.write("\t");
         nodesOut.write(terminatorAddress);
@@ -88,6 +88,9 @@ public class GraphSNAPWriter implements GraphWriter {
     public final void writeSNAPEdge(String id1, String id2, boolean isConditional) throws IOException {
 		String i1 = toIdentifier(id1);
 		String i2 = toIdentifier(id2);
+		if ((i1==null) || i1.isEmpty() || (i2 == null) || i2.isEmpty()) {
+		    return;
+		}
 		edgesOut.write(i1 + "\t" + i2 + "\t" + isConditional + "\n");
     }
     
@@ -112,7 +115,7 @@ public class GraphSNAPWriter implements GraphWriter {
 			boolean weakEdge) throws IOException {
 	}
 
-	private final String toIdentifier(String id) {
+	private final String newIdentifier(String id) {
 	    Integer value = idMap.get(id);
         if (value != null) {
         } else {
@@ -123,6 +126,14 @@ public class GraphSNAPWriter implements GraphWriter {
         return value.toString();
 	}
 
+	private final String toIdentifier(String id) {
+        Integer value = idMap.get(id);
+        if (value == null) {
+            return null;
+        } 
+        return value.toString();
+    }
+    
 	@Override
 	public String getFilename() {
 		return filename;
