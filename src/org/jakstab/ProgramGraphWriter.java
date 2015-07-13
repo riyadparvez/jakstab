@@ -611,25 +611,23 @@ public class ProgramGraphWriter {
     */
     ///*
 	private void writeAssemblyBBCFG(ControlFlowGraph cfg, String filename) {
-		// Create dot file
-		//GraphWriter gwriter = createGraphWriter(filename);
-		//if (gwriter == null) return;
-		
 		TreeMap<Location, BasicBlock> blockMap = new TreeMap<Location, BasicBlock>();
 		blockMap.putAll(cfg.getBasicBlocks());
 	
 		try {
 		    GraphSNAPWriter snapWriter = new GraphSNAPWriter(filename);
-		    
-			for (Map.Entry<Location, BasicBlock> entry : blockMap.entrySet()) {
-                
+		    AbsoluteAddress someBlaAddr = new AbsoluteAddress(0x8000000);
+		    boolean foundEntryBlock = false;
+			for (Map.Entry<Location, BasicBlock> entry : blockMap.entrySet()) {    
                 Location nodeLoc = entry.getKey();
                 BasicBlock bb = entry.getValue();
                 
                 String nodeName = nodeLoc.toString();
                 StringBuilder labelBuilder = new StringBuilder();
                 String locLabel = program.getSymbolFor(nodeLoc.getAddress());
-                if (locLabel.length() > 20) locLabel = locLabel.substring(0, 20) + "...";
+                if (locLabel.length() > 20) {
+                    locLabel = locLabel.substring(0, 20) + "...";
+                }
                 labelBuilder.append(locLabel).append("\\n");
                 int count = 0;
                 AbsoluteAddress firstAddr = null;
@@ -646,7 +644,16 @@ public class ProgramGraphWriter {
                     count++;
                     lastAddr = curAddr;
                 }
-                
+                // HACK: This is a hack to fix weird behaviour of this tool, may not be portable
+                if (firstAddr != null && someBlaAddr.compareTo(firstAddr) > 0) {
+                    continue;
+                }
+                if (firstAddr != null && lastAddr != null && !firstAddr.equals(lastAddr)) {
+                    foundEntryBlock = true;
+                }
+                if (!foundEntryBlock) {
+                    continue;
+                } 
                 snapWriter.writeSNAPNode(nodeLoc.toString(), 
                     (firstAddr != null)? firstAddr.toString() : "", 
                     (lastAddr != null)? lastAddr.toString() : "");
@@ -704,7 +711,7 @@ public class ProgramGraphWriter {
 			return;
 		}
 	}
-	//*/
+	// */
 	private void writeTopologicalBBCFG(ControlFlowGraph cfg, String filename) {
 		// Create dot file
 		GraphWriter gwriter = createGraphWriter(filename);
