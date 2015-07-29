@@ -61,7 +61,8 @@ public class GraphSNAPWriter implements GraphWriter {
 
 	public final void writeSNAPNode(String id, String startAddress, String terminatorAddress) throws IOException {
         if ((startAddress==null) || startAddress.isEmpty() || (terminatorAddress == null) || terminatorAddress.isEmpty()) {
-            return;
+            // Needed for weird plt entries handling in jakstab
+            //return;
         }
         String i = newIdentifier(id);
         // FIXME: Done by a hack

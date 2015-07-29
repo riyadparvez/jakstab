@@ -613,22 +613,30 @@ public class ProgramGraphWriter {
 	private void writeAssemblyBBCFG(ControlFlowGraph cfg, String filename) {
 		TreeMap<Location, BasicBlock> blockMap = new TreeMap<Location, BasicBlock>();
 		blockMap.putAll(cfg.getBasicBlocks());
-	
+		
+	    List<String> labels = new ArrayList<String>();
+	    List<AbsoluteAddress> firstAddresses = new ArrayList<AbsoluteAddress>();
+	    List<AbsoluteAddress> lastAddresses = new ArrayList<AbsoluteAddress>();
+	    
+	    Set<AbsoluteAddress> pltEntries = new HashSet<AbsoluteAddress>();
+	    /*
+	    List<String> labels = new ArrayList<String>();
+        List<AbsoluteAddress>  = new ArrayList<AbsoluteAddress>();
+        List<AbsoluteAddress> lastAddresses = new ArrayList<AbsoluteAddress>();
+        */
 		try {
 		    GraphSNAPWriter snapWriter = new GraphSNAPWriter(filename);
-		    AbsoluteAddress someBlaAddr = new AbsoluteAddress(0x8000000);
 		    boolean foundEntryBlock = false;
 			for (Map.Entry<Location, BasicBlock> entry : blockMap.entrySet()) {    
                 Location nodeLoc = entry.getKey();
                 BasicBlock bb = entry.getValue();
                 
                 String nodeName = nodeLoc.toString();
-                StringBuilder labelBuilder = new StringBuilder();
                 String locLabel = program.getSymbolFor(nodeLoc.getAddress());
-                if (locLabel.length() > 20) {
-                    locLabel = locLabel.substring(0, 20) + "...";
+                if (locLabel.equals("main")) {
+                    foundEntryBlock = true;
                 }
-                labelBuilder.append(locLabel).append("\\n");
+                
                 int count = 0;
                 AbsoluteAddress firstAddr = null;
                 AbsoluteAddress lastAddr = null;
@@ -644,20 +652,29 @@ public class ProgramGraphWriter {
                     count++;
                     lastAddr = curAddr;
                 }
-                // HACK: This is a hack to fix weird behaviour of this tool, may not be portable
-                if (firstAddr != null && someBlaAddr.compareTo(firstAddr) > 0) {
-                    continue;
-                }
-                if (firstAddr != null && lastAddr != null && !firstAddr.equals(lastAddr)) {
-                    foundEntryBlock = true;
+                if (firstAddr == lastAddr) {
+                    pltEntries.add(firstAddr);
                 }
                 if (!foundEntryBlock) {
+                    labels.add(nodeLoc.toString());
+                    firstAddresses.add(firstAddr);
+                    lastAddresses.add(lastAddr);
                     continue;
                 } 
                 snapWriter.writeSNAPNode(nodeLoc.toString(), 
                     (firstAddr != null)? firstAddr.toString() : "", 
                     (lastAddr != null)? lastAddr.toString() : "");
             }
+            
+            assert labels.size() == firstAddresses.size();
+            assert firstAddresses.size() == lastAddresses.size();
+            
+            for (int i=0; i< labels.size(); i++) {
+                snapWriter.writeSNAPNode(labels.get(i), 
+                    (firstAddresses.get(i) != null)? firstAddresses.get(i).toString() : "", 
+                    (lastAddresses.get(i) != null)? lastAddresses.get(i).toString() : "");
+            }
+            
 			for (CFAEdge e : cfg.getBasicBlockEdges()) {
 				if (e.getKind() == null) logger.error("Null kind? " + e);
 				Location sourceLoc = e.getSource(); 
